@@ -405,7 +405,7 @@ while run:
         hero_item_collide(player_hero,item1)
         question1 = transform.scale(image.load(text_question1),(200,250))
         if question_start==True:
-            name('23')
+            name('30')
             question_start=False   
         
     elif location == 'location-2':
