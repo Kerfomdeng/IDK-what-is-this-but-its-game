@@ -1,109 +1,250 @@
-from pygame import *
+import pygame 
+from pygame import * 
 from random import randint
+import time as my_time
 import os,sys
+from pygame.locals import * 
 
-white = color.Color("#FFFFFF")
-black = color.Color("#0083ff")
-width = 242
+#----SETTING_GAME----
+#player
+player_speed = 7
+player_hp=100
 
-app_folder = os.path.dirname(os.path.realpath(sys.argv[0]))
+player_size_width, player_size_height = 50,70
+FPS=80
 
-font.init()
+#window
+pygame.init()
+display.set_caption('Find the way out')
+win_width, win_height = 1200 , 700
+window = display.set_mode((win_width, win_height)) 
 
-#классы
-class Player(sprite.Sprite):
-    def __init__(self,player_imaged,player_imageu,player_imagel,player_imager, player_x, player_y, size_x, size_y, player_speed):
+#COMMON
+os.system('cls')
+clock = time.Clock()
+
+#----IMG----
+#player-stop
+img_player_stop=transform.scale(image.load("IMG\player\img_player_down_2.png"), (player_size_width, player_size_height))
+
+#player-up
+img_player_up_1=transform.scale(image.load("IMG\player\img_player_up_1.png"), (player_size_width, player_size_height))
+img_player_up_2=transform.scale(image.load("IMG\player\img_player_up_2.png"), (player_size_width, player_size_height))
+img_player_up_3=transform.scale(image.load("IMG\player\img_player_up_3.png"), (player_size_width, player_size_height))
+img_list_player_up=[img_player_up_1,img_player_up_2,img_player_up_1,img_player_up_3]
+
+#player-down
+img_player_down_1=transform.scale(image.load("IMG\player\img_player_down_1.png"), (player_size_width, player_size_height))
+img_player_down_2=transform.scale(image.load("IMG\player\img_player_down_2.png"), (player_size_width, player_size_height))
+img_player_down_3=transform.scale(image.load("IMG\player\img_player_down_3.png"), (player_size_width, player_size_height))
+img_list_player_down=[img_player_down_1,img_player_down_2,img_player_down_1,img_player_down_3]
+
+#player-left
+img_player_left_1=transform.scale(image.load("IMG\player\img_player_left_1.png"), (player_size_width, player_size_height))
+img_player_left_2=transform.scale(image.load("IMG\player\img_player_left_2.png"), (player_size_width, player_size_height))
+img_list_player_left=[img_player_left_1,img_player_left_2,img_player_left_1,img_player_left_2]
+
+#player-right
+img_player_right_1=transform.scale(image.load("IMG\player\img_player_right_1.png"), (player_size_width, player_size_height))
+img_player_right_2=transform.scale(image.load("IMG\player\img_player_right_2.png"), (player_size_width, player_size_height))
+img_list_player_right=[img_player_right_1,img_player_right_2,img_player_right_1,img_player_right_2]
+
+#common
+img_dark_background="IMG\img_dark_background.png" #dark_background/illusion of light
+img_backgraund= "IMG\ground_normal.jpg"
+
+img_backgraund2=transform.scale(image.load("IMG/backgraund_dark.png"), (win_width, win_height))
+
+ok_a =transform.scale(image.load("ok_a.png"), (200,100))
+yesno = transform.scale(image.load("IMG/yesno.png"), (300, 100))
+gk =transform.scale(image.load("gold_key.png"), (200,100))
+
+text_question1 = ("IMG\question.png")
+
+#decor 
+bed_img, bed2_img, bed3_img, bed4_img = "IMG/bed.png", "IMG/bed2.png", "IMG/bed3.png", "IMG/bed4.png"
+carpet_img = "IMG/carpet.png"
+book_img1, book_img2 = "IMG/bookshelf1.png", "IMG/bookshelf2.png"
+round_tbl_img = "IMG/round_table.png"
+tbl_img = "IMG/table.png"
+book_img3, book_img4 = "IMG/bookshelf3.png","IMG/bookshelf4.png"
+book_img5, book_img6 = "IMG/bookshelf5.png", "IMG/bookshelf6.png"
+
+
+#----SOUND----
+"""mixer.init()
+
+mixer.music.load('SOUNDS/sTest-sound.mp3')
+mixer.music.set_volume(0.5)
+mixer.music.play()"""
+
+#----FONT----
+font = pygame.font.Font(None, 50)
+
+
+
+
+#----CLASS----
+class Player(sprite.Sprite):#class Player and dark_background/illusion of light
+    def __init__(self, player_x, player_y):
         sprite.Sprite.__init__(self)
 
-        # каждый спрайт должен хранить свойство image - изображение
-        self.imaged = transform.scale(image.load(player_imaged), (size_x, size_y))
-        self.imageu = transform.scale(image.load(player_imageu), (size_x, size_y))
-        self.imagel = transform.scale(image.load(player_imagel), (size_x, size_y))
-        self.imager = transform.scale(image.load(player_imager), (size_x, size_y))
-        self.speed_def=player_speed
-        self.speed = player_speed+10
-        self.list_img=[self.imaged,self.imageu,self.imagel,self.imager]
-        self.s=0
-        # каждый спрайт должен хранить свойство rect - прямоугольник, в который он вписан
-        self.rect = self.imaged.get_rect()
+        #player
+        self.img_player_now=img_player_stop
+
+        self.player_speed = player_speed
+
+        self.rect = img_player_stop.get_rect()
         self.rect.x = player_x
         self.rect.y = player_y
+        self.img_number=0
+        #dark_background/illusion of light
+        self.img_dark_background=transform.scale(image.load(img_dark_background), (win_width*2, win_height*2))
+
+        self.rect_d_b = self.img_dark_background.get_rect()
+
+
+    def update(self):    
+        global values_up, values_down, values_right, values_left
+        
+        if keys[K_s] and self.rect.y < win_height - player_size_height and values_down == True or keys[K_DOWN] and self.rect.y < win_height -player_size_height:
+            self.rect.y += player_speed
+            self.img_player_now=img_list_player_down[self.img_number]
+            self.img_number+=1
+
+        if self.img_number>3:
+            self.img_number=0   
+
+        if keys[K_w] and self.rect.y > 5 and values_up == True or keys[K_UP] and self.rect.y > 5:
+            self.rect.y -= player_speed
+            self.img_player_now=img_list_player_up[self.img_number]
+            self.img_number+=1
+
+        if self.img_number>3:
+            self.img_number=0
+
+        if keys[K_a] and self.rect.x > 5 and values_left == True or keys[K_LEFT] and self.rect.x > 5:
+            self.rect.x -= player_speed
+            self.img_player_now=img_list_player_right[self.img_number]
+            self.img_number+=1
+
+        if self.img_number>3:
+            self.img_number=0
+
+        if keys[K_d] and self.rect.x < win_width - player_size_width and values_right == True or keys[K_RIGHT] and self.rect.x < win_width - player_size_width:
+            self.rect.x += player_speed
+            self.img_player_now=img_list_player_left[self.img_number]
+            self.img_number+=1
+
+        if self.img_number>3:
+            self.img_number=0
+
+        if keys[K_d]==keys[K_a]==keys[K_w]==keys[K_s]:
+            self.img_player_now=img_player_stop
+
     def reset(self):
-        window.blit(self.list_img[self.s], (self.rect.x, self.rect.y))
-
-    # метод для управления спрайтом стрелками клавиатуры
-    def update(self):
-        global width
-        global ch
-        global win_x
-        global win_y
-        global up
-        global down
-        global right
-        global left
-        global collide
-        keys = key.get_pressed()
-
-        if keys[K_UP] and not self.rect.y <= 0 and left == False and right == False <= 0 or keys[K_w] and not self.rect.y <= 0 and left == False and right == False:
-            self.rect.y -= self.speed
-            self.s = 1
-            up = True
-        else:
-            up = False
-
-        if keys[K_DOWN] and not self.rect.y >= win_y - 150 and left == False and right == False >= win_y or keys[K_s] and not self.rect.y >= win_y and right == False and left == False:
-            self.rect.y += self.speed
-            self.s = 0
-            down = True
-        else:
-            down = False
-
-        if keys[K_LEFT] and not self.rect.x <= 0 and down == False and up == False <= 0 or keys[K_a] and not self.rect.x <= 0 and down == False and up == False:
-            self.rect.x -= self.speed
-            self.s = 2
-            left = True
-        else:
-            left = False
-
-        if keys[K_RIGHT] and not self.rect.x >= win_x and down == False and up == False >= win_x or keys[K_d] and not self.rect.x >= win_x and down == False and up == False:
-            self.rect.x += self.speed
-            self.s = 3
-            right = True
-        else:
-            right = False
-
-        if keys[K_LSHIFT] and keys[K_LEFT] or keys[K_LSHIFT] and keys[K_s] or keys[K_LSHIFT] and keys[K_d] or keys[K_LSHIFT] and keys[K_w] or keys[K_LSHIFT] and keys[K_a] or keys[K_LSHIFT] and keys[K_RIGHT] or keys[K_LSHIFT] and keys[K_DOWN] or keys[K_LSHIFT] and keys[K_UP]:
-            if collide == False:    
-                self.speed = self.speed_def + 2
-                width -= 2
-        elif keys[K_LSHIFT]:
-            width+=1
-        if width<10:
-            self.speed = self.speed_def
-        if not keys[K_LSHIFT]:    
-            width += 1
-            self.speed = self.speed_def
-        if width > 242:
-            width = 242
-        elif width < 1:
-            width = 1
+        window.blit(self.img_player_now, (self.rect.x, self.rect.y))
+        window.blit(self.img_dark_background, (self.rect.x-win_width+(player_size_width/2), self.rect.y-win_height+(player_size_height/2)))
 
 class Wall(sprite.Sprite):
-    def __init__(self,width,height,x,y,col1,col2,col3):
+    def __init__(self, wall_x,wall_y,wall_size_width,wall_size_height):
         sprite.Sprite.__init__(self)
-        self.width=width
-        self.height=height
-        self.col1=col1
-        self.col2=col2
-        self.col3=col3
-        self.image=Surface((self.width,self.height))
-        self.image.fill((self.col1,self.col2,self.col3))
-        self.rect=self.image.get_rect()
-        self.rect.x=x
-        self.rect.y=y
 
-    def reset(self):
+        self.wall_size_width=wall_size_width
+        self.wall_size_height=wall_size_height
+
+        self.image=Surface((self.wall_size_width,self.wall_size_height))
+        self.image.fill((0, 0, 0))
+
+        self.rect = self.image.get_rect()
+        self.rect.x = wall_x
+        self.rect.y = wall_y
+
+    def update(self):
+        window.blit(self.image, (50,50))
+
+
+class Hud(sprite.Sprite):
+    def __init__(self, player_inventory):
+        print('classHud')
+
+    #Inventory / Quick access
+
+class Button(sprite.Sprite):
+    def __init__(self,button_img,button_x, button_y, button_size_height,button_size_width,action):
+        self.button_x=button_x
+        self.button_y=button_y
+        self.button_size_height=button_size_height
+        self.button_size_width=button_size_width
+        self.action=action
+
+class Door():
+    def __init__(self, door_x, door_y, door_size_width, door_size_height,tp_x,tp_y,tp_location):
+        sprite.Sprite.__init__(self)
+
+        self.tp_x=tp_x
+        self.tp_y=tp_y
+        self.tp_location=tp_location
+
+        self.image=Surface((door_size_width,door_size_height))
+        self.image.fill((251, 255, 94))
+
+        self.rect = self.image.get_rect()
+        self.rect.x = door_x
+        self.rect.y = door_y
+    def update(self):
+        window.blit(self.image, (self.rect.x,self.rect.y))
+    def teleportation(self):
+        global location
+        player_hero.rect.x=self.tp_x
+        player_hero.rect.y=self.tp_y
+        location=self.tp_location 
+
+
+class Decor(sprite.Sprite):
+    def __init__(self, x, y, width, height, decor_image):
+        sprite.Sprite.__init__(self)
+        self.width = width
+        self.height = height
+
+        self.image = transform.scale(image.load(decor_image), (width,height))
+
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+
+
+
+
+
+class Note(sprite.Sprite):
+    def __init__(self,object_x,object_y,object_size_width,object_size_height,object_img):
+        self.size_width=object_size_width
+        self.size_height=object_size_height
+        
+        self.image=transform.scale(image.load(object_img), (object_size_width, object_size_height))
+        self.rect=self.image.get_rect()
+        self.rect.x=object_x
+        self.rect.y=object_y
+
+        self.image2=transform.scale(image.load(object_img), (self.size_width*10, self.size_height*10))
+        self.rect=self.image.get_rect()
+        self.rect.x=object_x
+        self.rect.y=object_y
+
+    def reset1(self):
         window.blit(self.image, (self.rect.x, self.rect.y))
+
+    def reset2(self):
+        window.blit(img_backgraund2, (0, 0))
+        window.blit(self.image2, (win_width/2-self.size_width*5, win_height/2-self.size_height*5))
+        
+    def update(self):
+        global note_play
+        if keys[K_e]==True and sprite.collide_rect(note1, player_hero)==True:
+            note_play=True
+
 
 class items(Wall):
     def __init__(self,width,height,x,y,col1,col2,col3,item_number):
@@ -118,21 +259,112 @@ class items(Wall):
         self.rect.x=x
         self.rect.y=y
         self.item_number=item_number
+    def reset(self):
+        window.blit(self.image, (self.rect.x, self.rect.y))
+
+        
+    def reset(self):
+        window.blit(self.image, (self.rect.x, self.rect.y))
+
+
     def update(self):
-        global b
-        global b1
-        global question_start
-        keys = key.get_pressed()
-        if keys[K_e]:
-            b=True
-        if b== True and b1 ==True:
+        global b,b1,question_start
+
+
+        if keys[K_e]== True and b1 ==True:
             self.rect.x+=10000
-            question_start = True
-question_start=False                
-b=False
-b1=False
-Right_answer=None
-item1=items(30,30,700,400,0,180,0,1)
+            question_start =True
+            b1=False
+
+item1=items(30,30,400,400,0,180,0,1)
+item2=items(30,30,600,400,180,180,0,2)
+
+def quest_with_numbers(c,question):
+    global a
+    pygame.init()
+    name = ""
+    font = pygame.font.Font(None, 50)
+    while name !=c or a!=True :
+        for evt in pygame.event.get():
+            if evt.type == KEYDOWN:
+                if evt.unicode.isdigit():
+                    a=False 
+                    name += evt.unicode
+                elif evt.key == K_BACKSPACE:
+                    a=False
+                    name = name[:-1]
+                elif evt.key == K_RETURN:
+                    if name==c:
+                        a=True
+                    else:
+                        name=''
+        window.fill((0, 0, 0))
+        window.blit(question,(400,100))
+        block = font.render("Введите число затем тыкните enter:   "+name, True, (255, 255, 255))
+        window.blit((block), (100,500))
+        pygame.display.flip()
+def quest_with_letters(c,question):
+    global a
+    pygame.init()
+    name = ""
+    font = pygame.font.Font(None, 50)
+    while name !=c or a!=True :
+        for evt in pygame.event.get():
+            if evt.type == KEYDOWN:
+                if evt.unicode.isalpha():
+                    a=False 
+                    name += evt.unicode
+                elif evt.key == K_BACKSPACE:
+                    a=False
+                    name = name[:-1]
+                elif evt.key == K_RETURN:
+                    if name==c:
+                        a=True
+                    else:
+                        name=''
+        window.fill((0, 0, 0))
+        window.blit(question,(400,100))
+        block = font.render("Введите ответ: "+name, True, (255, 255, 255))
+        window.blit((block), (100,500))
+        pygame.display.flip()  
+def quest_with_yesno(d,c,question):
+    pygame.init()
+    name = ""
+    font = pygame.font.Font(None, 50)
+    while name !=c and name!=d :
+        for evt in pygame.event.get():
+            if evt.type == MOUSEBUTTONDOWN:
+                x, y = mouse.get_pos()
+                if x >= 348 and x <= 448 :
+                    if y >= 478 and y <= 525:
+                        name=d
+                        return name
+                elif x >= 467 and x <= 572 :
+                    if y >= 478 and y <= 525:
+                        name=c   
+                        return name
+        window.fill((0, 0, 0))
+        window.blit(question,(400,100))
+        window.blit(yesno,(300,450))
+        pygame.display.flip()
+    return name
+def ok(text):
+    pygame.init()
+    name = ""
+    font = pygame.font.Font(None, 50)
+    while name !='ok':
+        for evt in pygame.event.get():
+            if evt.type == MOUSEBUTTONDOWN:
+                x, y = mouse.get_pos()
+                if x >= 400 and x <= 600 :
+                    if y >= 450 and y <= 550:
+                        name='ok'
+        window.fill((0, 0, 0))
+        window.blit(gk,(500,100))
+        block = font.render(text, True, (255, 255, 255))
+        window.blit(block,(300,300))
+        window.blit(ok_a,(400,450))
+        pygame.display.flip()        
 
 def hero_item_collide(GG,item):
     global b1
@@ -140,346 +372,401 @@ def hero_item_collide(GG,item):
         b1=True
 
 
-#нужные функции
-def containsNumber(value):
-    for character in value:
-        if character.isdigit():
-            return True
-    return False
+#----FUNCTION----
+def object_collide(walls_list, decor_list):
+    global values_up, values_down, values_right, values_left
+    values_up = values_down = values_right = values_left = True
 
-#изображения нужные
+    #player_hero.rect.y<walls_list[i].rect.y and 
+    for i in range(0,len(walls_list)):
+        #UP
+        if  abs(player_hero.rect.y-(walls_list[i].rect.y+walls_list[i].wall_size_height))<10 and walls_list[i].rect.x-player_size_height< player_hero.rect.x <  (walls_list[i].rect.x+ walls_list[i].wall_size_width):
+            values_up=False
+        #DOWN
+        if  abs((player_hero.rect.y+player_size_height)-walls_list[i].rect.y)<10 and walls_list[i].rect.x-player_size_height< player_hero.rect.x <  (walls_list[i].rect.x+ walls_list[i].wall_size_width):
+            values_down=False
+        #RIGHT
+        if  abs((player_hero.rect.x+player_size_width)-walls_list[i].rect.x)<10 and walls_list[i].rect.y-player_size_height < player_hero.rect.y <  (walls_list[i].rect.y+ walls_list[i].wall_size_height):
+            values_right=False
+        #LEFT
+        if  abs(player_hero.rect.x-(walls_list[i].rect.x+walls_list[i].wall_size_width))<10 and walls_list[i].rect.y-player_size_height < player_hero.rect.y <  (walls_list[i].rect.y+ walls_list[i].wall_size_height):
+            values_left=False
 
-bg1_img = os.path.join(app_folder, "map.jpg")
-bg2_img = os.path.join(app_folder,"bg.jpg")
-bg_lobby_img = os.path.join(app_folder,"lobby_bg.png")
-play_img = os.path.join(app_folder,"play.png")
-quit_img= os.path.join(app_folder,"QUIT.png")
+    for i in range(0,len(decor_list)):
+        #UP
+        if  abs(player_hero.rect.y-(decor_list[i].rect.y+decor_list[i].height))<10 and decor_list[i].rect.x-player_size_height< player_hero.rect.x <  (decor_list[i].rect.x+ decor_list[i].width):
+            values_up=False
+        #DOWN
+        if  abs((player_hero.rect.y+player_size_height)-decor_list[i].rect.y)<10 and decor_list[i].rect.x-player_size_height< player_hero.rect.x <  (decor_list[i].rect.x+ decor_list[i].width):
+            values_down=False
+        #RIGHT
+        if  abs((player_hero.rect.x+player_size_width)-decor_list[i].rect.x)<10 and decor_list[i].rect.y-player_size_height < player_hero.rect.y <  (decor_list[i].rect.y+ decor_list[i].height):
+            values_right=False
+        #LEFT
+        if  abs(player_hero.rect.x-(decor_list[i].rect.x+decor_list[i].width))<10 and decor_list[i].rect.y-player_size_height < player_hero.rect.y <  (decor_list[i].rect.y+ decor_list[i].height):
+            values_left=False
 
-menu_img = os.path.join(app_folder,"menu.png")
-player_imgl = os.path.join(app_folder,"pl_left.png")
-player_imgr = os.path.join(app_folder,"pl_right.png")
-player_imgu = os.path.join(app_folder,"pl_up.png")
-player_imgd = os.path.join(app_folder,"pl_down.png")
-sett_img = os.path.join(app_folder, "Settings.png")
-sett_menu_img = os.path.join(app_folder, "setting_menu.png")
+def object_draw(list):
+    group=sprite.Group()
+    for i in range(len(list)):
+        group.add(list[i])
+    group.draw(window)
 
-#параметры окна
-window = display.set_mode((1000, 700))
-display.set_caption("Logika-game")
+def walls_draw(walls_list):
+    walls_room_group=sprite.Group()
+    for i in range(len(walls_list)):
+        walls_room_group.add(walls_list[i])
+    walls_room_group.draw(window)
 
-but_menu = transform.scale(image.load(menu_img),(150, 75))
-but_play = transform.scale(image.load(play_img),(200, 150))
-but_quit = transform.scale(image.load(quit_img),(140, 60))
-but_sett = transform.scale(image.load(sett_img),(100, 80))
-menu_sett = transform.scale(image.load(sett_menu_img),(450, 500))
-background_lbl = transform.scale(image.load(bg_lobby_img),(1000, 700))
-background1 = transform.scale(image.load(bg1_img),(1000,700))
-background2 = transform.scale(image.load(bg2_img),(1000,700))
+def it_update(player,item,question,need_item):
+    b=False
+    keys = key.get_pressed()
+    if keys[K_e]:
+        b=True
+    if b== True and sprite.collide_rect(player,item):
+        if need_item ==None:
+            item.rect.x+=10000
+        else:
+            pass    
+        question=True
+        return question
 
-x=0
-z=0
-rv=0 
+def name(c):
+    global a
+    name = ""
+    
+    while name !=c or a!=True:
+        for evt in pygame.event.get():
+            if evt.type == KEYDOWN:
+                if evt.unicode.isdigit():
+                    a=False 
+                    name += evt.unicode
+                elif evt.key == K_BACKSPACE:
+                    a=False
+                    name = name[:-1]
+                elif evt.key == K_RETURN:
+                    a=True
+        window.fill((0, 0, 0))
+        window.blit(question1,(400,100))
+        block = font.render("Введите число затем тыкните enter: "+name, True, (255, 255, 255))
+        window.blit((block), (100,500))
+        pygame.display.flip()
 
-#спрайт игрока
-hero = Player(player_imgd,player_imgu,player_imgl,player_imgr, 730, 150, 30, 30,2)
+def wall_collide(walls_list, decor_list):
+    global values_up, values_down, values_right, values_left
+    values_up = values_down = values_right = values_left = True
 
-##############################################################################
-walls = sprite.Group()
-room = []
-room2 = []
-room3 = []
-room4 = []
-room5 = []
-room6 = []
-room7 = []
+    #player_hero.rect.y<walls_list[i].rect.y and 
+    for i in range(0,len(walls_list)):
+        #UP
+        if  abs(player_hero.rect.y-(walls_list[i].rect.y+walls_list[i].wall_size_height))<10 and walls_list[i].rect.x-player_size_height< player_hero.rect.x <  (walls_list[i].rect.x+ walls_list[i].wall_size_width):
+            values_up=False
+        #DOWN
+        if  abs((player_hero.rect.y+player_size_height)-walls_list[i].rect.y)<10 and walls_list[i].rect.x-player_size_height< player_hero.rect.x <  (walls_list[i].rect.x+ walls_list[i].wall_size_width):
+            values_down=False
+        #RIGHT
+        if  abs((player_hero.rect.x+player_size_width)-walls_list[i].rect.x)<10 and walls_list[i].rect.y-player_size_height < player_hero.rect.y <  (walls_list[i].rect.y+ walls_list[i].wall_size_height):
+            values_right=False
+        #LEFT
+        if  abs(player_hero.rect.x-(walls_list[i].rect.x+walls_list[i].wall_size_width))<10 and walls_list[i].rect.y-player_size_height < player_hero.rect.y <  (walls_list[i].rect.y+ walls_list[i].wall_size_height):
+            values_left=False
 
-##############################################################################
-ch=True
-clock=time.Clock()
+    for i in range(0,len(decor_list)):
+        #UP
+        if  abs(player_hero.rect.y-(decor_list[i].rect.y+decor_list[i].height))<10 and decor_list[i].rect.x-player_size_height< player_hero.rect.x <  (decor_list[i].rect.x+ decor_list[i].width):
+            values_up=False
+        #DOWN
+        if  abs((player_hero.rect.y+player_size_height)-decor_list[i].rect.y)<10 and decor_list[i].rect.x-player_size_height< player_hero.rect.x <  (decor_list[i].rect.x+ decor_list[i].width):
+            values_down=False
+        #RIGHT
+        if  abs((player_hero.rect.x+player_size_width)-decor_list[i].rect.x)<10 and decor_list[i].rect.y-player_size_height < player_hero.rect.y <  (decor_list[i].rect.y+ decor_list[i].height):
+            values_right=False
+        #LEFT
+        if  abs(player_hero.rect.x-(decor_list[i].rect.x+decor_list[i].width))<10 and decor_list[i].rect.y-player_size_height < player_hero.rect.y <  (decor_list[i].rect.y+ decor_list[i].height):
+            values_left=False
 
-finish=False
-speed_vis = False
-visible = False
+#----OGJECT_GAME----
+player_hero=Player(600, 385)
+backgraund = transform.scale(image.load(img_backgraund), (win_width, win_height))
 
-run=True
-game="stop"
 
-#window size
-base_font = font.Font(None, 32)
-window_x, window_y =  window.get_size()
-text = base_font.render("X", True, (0,0,0))
-color = (98, 98, 98)
-up = False
-down = False
-right = False
-left = False
 
-collide = False
-list=list()
-while run:
-    win_x, win_y = window.get_size()
-    win_x1 = int(win_x) - 120
-    win_y1 = int(win_y) - 100
-    window.blit(background_lbl,(0,0))
-    window.blit(but_play, (win_x / 2 - 100, win_y / 2 - 100))
-    window.blit(but_quit, (win_x / 2 - 100 + 35, win_y / 2 - 100 + 135))
+#----ROOMS----
+#room-1
+#border
+room1_wall1= Wall(0, 0, 550, 20)
+room1_wall2= Wall(650, 0, 600, 20)
+room1_wall3= Wall(0, 0, 20, 300)
+room1_wall4= Wall(0, 400, 20, 300)
+room1_wall5= Wall(0, 680, 1200, 20)
+room1_wall6= Wall(1180, 0, 20, 185)
+room1_wall7= Wall(1180, 285, 20, 420)
+wall_room1_list = [room1_wall1,room1_wall2,room1_wall3,room1_wall4,room1_wall5,room1_wall6,room1_wall7]
+#door
+door1_room1=Door(550, 0, 97, 18, 600, 610,'location-6')
+door2_room1=Door(0, 300, 20, 100, 1060, 305,'location-3')
+door3_room1=Door(1185, 185, 20, 100, 50, 140,'location-4')
+#decor
+bed = Decor(1045, 450, 150, 200, bed_img)
+bookshelf1 = Decor(20, 10, 130, 150, book_img1)
+bookshelf2 = Decor(150, 20, 130, 150, book_img2)
+round_tbl = Decor(80, 160, 130, 85, round_tbl_img)
+tbl = Decor(480, 590, 260, 100, tbl_img)
+#фоновые объекты
+carpet = Decor(500, 500, 200, 100, carpet_img)#ковер
+#list1_room1_decor = [bed, bookshelf1, bookshelf2, round_tbl, tbl]#для столкновения(физические объекты)
+#list2_room1_decor = [bed, bookshelf1, bookshelf2, round_tbl, tbl,carpet]#для прорисовки(фоновые + физические объекты)
+#
+note1=Note(500,500,50,25,text_question1)
 
-    if visible == True:
-        window.blit(menu_sett, (win_x1 - 220, win_y1 - 420))
 
-        if (win_x, win_y) == (1000, 700):
-            input_rect = Rect(820, 350, 50, 32)
-            input_rect2 = Rect(890, 350, 50, 32)
-        elif (win_x, win_y) == (800, 600):
-            input_rect = Rect(win_x1 - 60, win_y1 - 225, 50, 32)
-            input_rect2 = Rect(win_x1 + 10, win_y1 - 225, 50, 32)
-        elif (win_x, win_y) == (1200, 800):
-            input_rect = Rect(win_x1 - 60, win_y1 - 195, 50, 32)
-            input_rect2 = Rect(win_x1 + 10, win_y1 - 195, 50, 32)
-        elif (win_x, win_y) == (1400, 850):
-            input_rect = Rect(win_x1 - 60, win_y1 - 160, 50, 32)
-            input_rect2 = Rect(win_x1 + 10, win_y1 - 160, 50, 32)
+#room-2
+#border
+room2_wall1 = Wall(0, 0, 1210, 20)
+room2_wall2 = Wall(0, 0, 20, 700)
+room2_wall4 = Wall(0, 680, 850, 20)
+room2_wall5 = Wall(950, 680, 550, 20)
+room2_wall6 = Wall(1185, 0, 20, 695)
+list_wall_room2 = [room2_wall1,room2_wall2,room2_wall4,room2_wall5,room2_wall6]
+#Двери
+door1_room2=Door(850, 680, 97, 18, 920, 70,'location-4')
+#Декор
+round_tbl2 = Decor(985, 525, 145, 125, round_tbl_img)
+bookshelf3 = Decor(870, 10, 175, 130, book_img1)
+bookshelf4 = Decor(1045, 15, 115, 135, book_img2)
+bookshelf5 = Decor(20, 10, 130, 140, book_img3)
+bookshelf6 = Decor(145, 20, 130, 140, book_img4)
+bed2 = Decor(20, 475, 165, 200, bed2_img)
+tbl2 = Decor(480, 300, 255, 100, tbl_img)
+list1_room2_decor = [round_tbl2, bookshelf3, bookshelf4, bookshelf5, bookshelf6]#для столкновения(физические объекты)
+list2_room2_decor = [round_tbl2, bookshelf3, bookshelf4, bookshelf5, bookshelf6]#для прорисовки(фоновые + физические объекты)
 
-        draw.rect(window, color, input_rect)
-        draw.rect(window, color, input_rect2)
 
-        text_surface = base_font.render(str(window_x), True, (0, 0, 0))
-        window.blit(text_surface, (win_x1 - 60, win_y1 - 250 + 5))
-        window.blit(text, (win_x1 - 60 + 52, win_y1 - 250 + 5))
-        text_surface2 = base_font.render(str(window_y), True, (0, 0, 0))
-        window.blit(text_surface2, (win_x1 + 10, win_y1 - 250 + 5))
+#room-3
+#border
+room3_wall1 = Wall(0, 0, 550, 20)
+room3_wall2 = Wall(0, 0, 20, 680)
+room3_wall3 = Wall(0, 680, 1200, 20)
+room3_wall4 = Wall(1190, 0, 20, 260)
+room3_wall5 = Wall(1190, 350, 20, 335)
+room3_wall6 = Wall(650, 0, 650, 20)
+list_wall_room3 = [room3_wall1,room3_wall2,room3_wall3,room3_wall4,room3_wall5,room3_wall6]
+#Двери
+door1_room3=Door(1190, 250, 20, 100, 115, 345,'location-1')
+door2_room3=Door(550, 0, 100, 18, 600, 610,'location-5')
+#Декор
+bookshelf7 = Decor(20, 10, 150, 190, book_img3)
+round_tbl3 = Decor(200, 70, 120, 120, round_tbl_img)
+tbl3 = Decor(560, 220, 125, 230, tbl_img)
+#list1_room3_decor = [bookshelf7, round_tbl3]#для столкновения(физические объекты)
+#list2_room3_decor = [bookshelf7, round_tbl3]#для прорисовки(фоновые + физические объекты)
 
-        text_surface = base_font.render(str(window_x - 200), True, (0, 0, 0))
-        window.blit(text_surface, (win_x1 - 60 + 10, win_y1 - 250 + 35))
-        window.blit(text, (win_x1 - 60 + 52, win_y1 - 250 + 35))
-        text_surface2 = base_font.render(str(window_y - 100), True, (0, 0, 0))
-        window.blit(text_surface2, (win_x1 + 10, win_y1 - 250 + 35))
 
-        text_surface = base_font.render(str(window_x + 200), True, (0, 0, 0))
-        window.blit(text_surface, (win_x1 - 60, win_y1 - 250 + 65))
-        window.blit(text, (win_x1 - 60 + 52, win_y1 - 250 + 65))
-        text_surface2 = base_font.render(str(window_y + 100), True, (0, 0, 0))
-        window.blit(text_surface2, (win_x1 + 10, win_y1 - 250 + 65))
+#room-4
+#border
+room4_wall1= Wall(0, 0, 20, 125)
+room4_wall2= Wall(0, 250, 20, 490)
+room4_wall3= Wall(0, 685, 1210, 20)
+room4_wall4= Wall(1000, 0, 310, 20)
+room4_wall5= Wall(0, 0, 900, 20)
+room4_wall6= Wall(1185, 0, 20, 690)
+list_wall_room4 = [room4_wall1,room4_wall2,room4_wall3,room4_wall4,room4_wall5,room4_wall6]
+#Двери
+door1_room4=Door(900, 0, 100, 20, 920, 600,'location-2')
+door2_room4=Door(0, 125, 20, 125, 1100, 200,'location-1')
+#Декор
+tbl4 = Decor(435, 15, 330, 105, tbl_img)
+round_tbl4 = Decor(1000, 275, 140, 125, round_tbl_img)
+bed3 = Decor(20, 520, 115, 165, bed3_img)
+#list1_room4_decor = [tbl4, round_tbl4,bed3]#для столкновения(физические объекты)
+#list2_room4_decor = [tbl4, round_tbl4,bed3]#для прорисовки(фоновые + физические объекты)
 
-        text_surface = base_font.render(str(window_x + 400), True, (0, 0, 0))
-        window.blit(text_surface, (win_x1 - 60, win_y1 - 250 + 95))
-        window.blit(text, (win_x1 - 60 + 52, win_y1 - 250 + 95))
-        text_surface2 = base_font.render(str(window_y + 150), True, (0, 0, 0))
-        window.blit(text_surface2, (win_x1 + 10, win_y1 - 250 + 95))
 
-    window.blit(but_sett, (win_x1, win_y1))
+#room-5
+#border
+room5_wall1 = Wall(0, 0, 700, 20)
+room5_wall2 = Wall(0, 0, 20, 700)
+room5_wall3 = Wall(700, 0, 495, 20)
+room5_wall4 = Wall(0, 680, 560, 20)
+room5_wall5 = Wall(645, 680, 550, 20)
+room5_wall6 = Wall(1185, 0, 20, 695)
+list_wall_room5 = [room5_wall1,room5_wall2,room5_wall3,room5_wall4,room5_wall5,room5_wall6]
+#Двери
+door1_room5=Door(550, 680, 97, 18, 600, 70,'location-3')
+#Декор
+bed4 = Decor(20, 500, 175, 180, bed4_img)
+bookshelf8, bookshelf9 = Decor(440, 20, 140, 140, book_img5), Decor(580, 20, 180, 140, book_img6) 
+tbl5 = Decor(480, 145, 190, 70, tbl_img)
+#list1_room5_decor = [bed4, bookshelf8,bookshelf9,tbl5]#для столкновения(физические объекты)
+#list2_room5_decor = [bed4, bookshelf8,bookshelf9,tbl5]#для прорисовки(фоновые + физические объекты)
 
-    #проверка событий
+
+#room-6
+#border
+room6_wall1 = Wall(0, 0, 1200, 20)
+room6_wall2 = Wall(0, 0, 20, 700)
+room6_wall4 = Wall(0, 680, 560, 20)
+room6_wall5 = Wall(645, 680, 550, 20)
+room6_wall6 = Wall(1185, 0, 20, 695)
+list_wall_room6 = [room6_wall1,room6_wall2,room6_wall4,room6_wall5,room6_wall6]
+#Двери
+door1_room6=Door(550, 680, 97, 18, 600, 70,'location-1')
+#Декор
+bookshelf10, bookshelf11 = Decor(455, 130, 110, 180, book_img5), Decor(560, 130, 150, 180, book_img6)
+tbl6 = Decor(460, 310, 245, 80, tbl_img)
+#list1_room6_decor = [bookshelf10, bookshelf11,tbl6]#для столкновения(физические объекты)
+#list2_room6_decor = [bookshelf10, bookshelf11,tbl6]#для прорисовки(фоновые + физические объекты)
+
+
+#список декора по комнатам: 1 - первая комната и т.д.
+decor_list1 = [bed, bookshelf1, bookshelf2, round_tbl, tbl]
+decor_list2 = [round_tbl2, bookshelf3, bookshelf4, bookshelf5, bookshelf6, bed2, tbl2]
+decor_list3 = [bookshelf7, tbl3, round_tbl3]
+decor_list4 = [bed3, tbl4, round_tbl4]
+decor_list5 = [bed4, bookshelf8, bookshelf9, tbl5]
+decor_list6 = [tbl6, bookshelf10, bookshelf11]
+decor_list = [decor_list1, decor_list2, decor_list3, decor_list4, decor_list5, decor_list6]
+
+
+#----VARIABLE----
+location='location-1' 
+note_play=False
+
+
+carpet_checker,a,b1,question_start,gold_key=False,False,False,False,False
+while True:
+    keys = key.get_pressed()
+
+    values_up = values_down = values_right = values_left = True
+    b=False
+
+
     for e in event.get():
         if e.type==QUIT:
-            run=False
-        if e.type == MOUSEBUTTONDOWN:
-            x, y = mouse.get_pos()
-            print(x,y)
-            if x >= win_x / 2 - 80 and x <= win_x / 2 + 70:
-                if y >= win_y / 2 - 50 and y <= win_y / 2:
-                    game='start'
-                    speed_vis = True
-            if x >= 20 and x <= 130:
-                if y >= 15 and y <= 60:
-                    game='stop'
-                    speed_vis = False
-            if x >= win_x / 2 - 65 and x <= win_x / 2 + 70 and game == 'stop':
-                if y >= win_y / 2 + 20 and y <= win_y / 2 + 85:
-                    run=False
-            if x >= win_x1 - 10 and x <= win_x and visible == True:
-                if y >= win_y1 + 10 and y <= win_y1 + 70 and visible == True:
-                    visible = False 
-            elif x >= win_x1 - 10 and x <= win_x and visible == False:
-                if y >= win_y1 + 10 and y <= win_y1 + 70 and visible == False:
-                    visible = True 
-
-            if x >= win_x - 65 and x <= win_x - 45 and visible == True:
-                if y >= win_y1 - 235 and y <= win_y1 - 220 and visible == True:
-                    visible2 = True
-
-            elif x >= win_x - 65 and x <= win_x - 45 and visible == True:
-                if y >= win_y1 - 235 and y <= win_y1 - 220 and visible == True:
-                    visible2 = False
-                    
-            if x >= win_x1 - 60 and x <= win_x - 60 and visible == True:
-                if y >= win_y1 - 210 and y <= win_y1 - 180 and visible == True:
-                    window = display.set_mode((800, 600)) 
-                    background_lbl = transform.scale(image.load(bg_lobby_img),(800, 600))
-                    background1 = transform.scale(image.load(bg1_img),(800, 600))
-                    background2 = transform.scale(image.load(bg2_img),(800, 600))
-                    hero.rect.x, hero.rect.y = ((800 / 1000 * 730), (600 / 700 * 145))
-
-            if x >= win_x1 - 60 and x <= win_x - 60 and visible == True:
-                if y >= win_y1 - 250 and y <= win_y1 - 230 and visible == True:
-                    window = display.set_mode((1000, 700)) 
-                    background_lbl = transform.scale(image.load(bg_lobby_img),(1000, 700))
-                    background1 = transform.scale(image.load(bg1_img),(1000, 700))
-                    background2 = transform.scale(image.load(bg2_img),(1000, 700))
-                    hero.rect.x, hero.rect.y = ((1000 / 1000 * 730), (700 / 700 * 145))
-
-            if x >= win_x1 - 60 and x <= win_x - 60 and visible == True:
-                if y >= win_y1 - 190 and y <= win_y1 - 165  and visible == True:
-                    window = display.set_mode((1200, 800)) 
-                    background_lbl = transform.scale(image.load(bg_lobby_img),(1200, 800))
-                    background1 = transform.scale(image.load(bg1_img),(1200, 800))
-                    background2 = transform.scale(image.load(bg2_img),(1200, 800))
-                    hero.rect.x, hero.rect.y = ((1200 / 1000 * 730), (800 / 700 * 145))
-
-            if x >= win_x1 - 60 and x <= win_x - 60 and visible == True:
-                if y >= win_y1 - 160 and y <= win_y1 - 140  and visible == True:
-                    window = display.set_mode((1400, 850)) 
-                    background_lbl = transform.scale(image.load(bg_lobby_img),(1400, 850))
-                    background1 = transform.scale(image.load(bg1_img),(1400, 850))
-                    background2 = transform.scale(image.load(bg2_img),(1400, 850))
-                    hero.rect.x, hero.rect.y = ((1400 / 1000 * 730), (850 / 700 * 145))
-            if x >= win_x/1000*424 and x <= win_x/1000*523 and question_start==True:
-                if y >= win_y/700*629  and y <=win_y/700*680:
-                    Right_answer=False
-            if x >= win_x/1000*538 and x <= win_x/1000*638 and question_start==True:
-                if y >= win_y/700*629  and y <=win_y/700*680:
-                    Right_answer=False
-            if x >= win_x/1000*656 and x <= win_x/1000*751 and question_start==True:
-                if y >= win_y/700*629  and y <=win_y/700*680:
-                    Right_answer=False
-            if x >= win_x/1000*768 and x <= win_x/1000*875 and question_start==True:
-                if y >= win_y/700*629  and y <=win_y/700*680:
-                    Right_answer=False                            
-    #отоброжение комнат и среды
-    if game == "start":
-        window.blit(background1,(0,0))
-        window.blit(but_menu,(0,0))
-        visible = False
-        visible2 = False
-
-        #walls 
-        for i in range(len(room)):
-            room[i].kill()
-        for i in range(len(room2)):
-            room2[i].kill()
-        for i in range(len(room3)):
-            room3[i].kill()
-        for i in range(len(room4)):
-            room4[i].kill()
-        for i in range(len(room5)):
-            room5[i].kill()
-        for i in range(len(room6)):
-            room6[i].kill()
-        for i in range(len(room7)):
-            room7[i].kill()
-
-
-        question1=Wall(win_x/1000*500,win_y/700*150,win_x/1000*400,win_y/700*550,255,255,200)
-        question1_text=Wall(win_x/1000*450,win_y/700*50,win_x/1000*425,win_y/700*575,0,255,200)
-        question1_answer1=Wall(win_x/1000*100,win_y/700*50,win_x/1000*425,win_y/700*630,0,180,200)
-        question1_answer2=Wall(win_x/1000*100,win_y/700*50,win_x/1000*540,win_y/700*630,0,255,200)
-        question1_answer3=Wall(win_x/1000*100,win_y/700*50,win_x/1000*655,win_y/700*630,0,255,200)
-        question1_answer4=Wall(win_x/1000*105,win_y/700*50,win_x/1000*770,win_y/700*630,0,255,200)
-        """        list.append(question1)
-        list.append(question1_text)
-        list.append(question1_answer1)
-        list.append(question1_answer2)
-        list.append(question1_answer3)s
-        list.append(question1_answer4)"""
-        list=[question1,question1_text,question1_answer1,question1_answer2,question1_answer3,question1_answer4]
-        w1 = Wall(3, win_y/700 * 270, win_x/1000 * 335, win_y/700 * 90, 90, 90, 90)
-        w2 = Wall(3, win_y/700 * 90, win_x/1000 * 335, win_y/700 * 425, 90, 90, 90)
-        w3 = Wall(3, win_y/700 * 215, win_x/1000*662, win_y/700*90, 90, 90, 90)
-        w4 = Wall(3, win_y/700*150, win_x/1000*662, win_y/700*370, 90, 90, 90)
-        w5 = Wall(win_x/1000*660, 3, win_x/1000*335, win_y/700*89, 90, 90, 90)
-        w6 = Wall(win_x/1000*330, 3, win_x/1000*335, win_y/700*515, 90, 90, 90)
-        w7 = Wall(win_x/1000*130, 3, win_x/1000*340, win_y/700*280, 90, 90, 90)
-        w8 = Wall(win_x/1000*140, 3, win_x/1000*520, win_y/700*280, 90, 90, 90)
-        w9 = Wall(3, win_y/700*135, win_x/1000*793, win_y/700*90, 90, 90, 90)
-        w10 = Wall(win_x/1000*135, 3, win_x/1000*793, win_y/700*226, 90, 90, 90)
-        w11 = Wall(win_x/1000*20, 3, win_x/1000*974, win_y/700*226, 90, 90, 90)
-        w12 = Wall(3, win_y/700*400, win_x/1000*990, win_y/700*90, 90, 90, 90)
-        w13 = Wall(win_x/1000*55, 3, win_x/1000*660, win_y/700*382, 90, 90, 90)
-        w14 = Wall(win_x/1000*220, 3, win_x/1000*770, win_y/700*382, 90, 90, 90)
-        w15 = Wall(3, win_y/700*35, win_x/1000*807, win_y/700*380, 90, 90, 90)
-        w16 = Wall(3, win_y/700*23, win_x/1000*807, win_y/700*468, 90, 90, 90)
-        w17 = Wall(win_x/1000*148, 3, win_x/1000*667, win_y/700*490, 90, 90, 90)
-        w18 = Wall(win_x/1000*130, 3, win_x/1000*18, win_y/700*288, 90, 90, 90)
-        w19 = Wall(win_x/1000*120, 3, 215, win_y/700*288, 90, 90, 90)
-        w20 = Wall(win_x/1000*322, 3, win_x/1000*13, win_y/700*177, 90, 90, 90)
-        w21 = Wall(3, win_y/700*315, win_x/1000*15, win_y/700*177, 90, 90, 90)
-        w22 = Wall(win_x/1000*320, 3, win_x/1000*15, win_y/700*490, 90, 90, 90)
-        w23 = Wall(win_x/1000*40, 3, win_x/1000*19, win_y/700*358, 90, 90, 90)
-        w24 = Wall(win_x/1000*23, 3, win_x/1000*110, win_y/700*358, 90, 90, 90)
-        w25 = Wall(3, win_y/700*65, win_x/1000*134, win_y/700*292, 90, 90, 90)
-        w26 = Wall(3, win_y/700*70, win_x/1000*212, win_y/700*290, 90, 90, 90)
-        w27 = Wall(win_x/1000*35, 3, win_x/1000*215, win_y/700*358, 90, 90, 90)
-        w28 = Wall(win_x/1000*30, 3, win_x/1000*305, win_y/700*358, 90, 90, 90)
-        w29 = Wall(win_x/1000*36, 3, win_x/1000*19, win_y/700*425, 90, 90, 90)
-        w30 = Wall(win_x/1000*48, 3, win_x/1000*107, win_y/700*425, 90, 90, 90)
-        w31 = Wall(win_x/1000*55, 3, win_x/1000*204, win_y/700*425, 90, 90, 90)
-        w32 = Wall(win_x/1000*32, 3, win_x/1000*308, win_y/700*425, 90, 90, 90)
-        w33 = Wall(3, win_y/700*60, win_x/1000*120, win_y/700*430, 90, 90, 90)
-        w34 = Wall(3, win_y/700*60, win_x/1000*228, win_y/700*430, 90, 90, 90)
-
-        room = [w1, w2, w3, w4, w5, w6, w7, w8]
-        room2 = [w9, w10, w11, w12]
-        room3 = [w13, w14, w15, w16, w17]
-        room4 = [w18, w19, w20, w21, w22]
-        room5 = [w23, w24, w25]
-        room6 = [w26, w27, w28]
-        room7 = [w29, w30, w31, w32, w33, w34]
-                
-        for i in range(len(room)):
-            walls.add(room[i])
-        for i in range(len(room2)):
-            walls.add(room2[i])
-        for i in range(len(room3)):
-            walls.add(room3[i])
-        for i in range(len(room4)):
-            walls.add(room4[i])
-        for i in range(len(room5)):
-            walls.add(room5[i])
-        for i in range(len(room6)):
-            walls.add(room6[i])
-        for i in range(len(room7)):
-            walls.add(room7[i])
-        if Right_answer==True or Right_answer==False:
-            for i in list:
-                i.rect.x+=1000000
-        hero_item_collide(hero,item1)
+            exit()
+    
+    
+    if location == 'menu':
+        window.fill('#D2D2D2')
+        wall_collide(wall_room1_list, decor_list1)
+        player_hero.update()
+        player_hero.reset()
+        walls_draw(wall_room1_list)
+    elif location == 'location-1':
+        window.blit(backgraund,(0, 0))
+        object_collide(wall_room1_list, decor_list1)
+        door1_room1.update(), door2_room1.update()
         item1.reset()
-        item1.update()
-        walls.draw(window)
-        if question_start==True:    
-            question1.reset()
-            question1_text.reset()
-            question1_answer1.reset()
-            question1_answer2.reset()
-            question1_answer3.reset()
-            question1_answer4.reset()
-        hero.update()
-        hero.reset()
+        item2.reset()
+        bed.update()
+        bookshelf1.update(), bookshelf2.update()
+        round_tbl.update()
+        tbl.update()
+        carpet.update()
+        object_draw(decor_list1)
+        player_hero.update()
+        player_hero.reset()
+        walls_draw(wall_room1_list)
+        if sprite.collide_rect(door1_room1, player_hero):
+            door1_room1.teleportation()
+        elif sprite.collide_rect(door2_room1, player_hero) and gold_key ==True:
+            door2_room1.teleportation()
 
-    #проверка столкновений
-    if sprite.spritecollide(hero, walls, False):
-        collide = True
-        if hero.s == 0 or down == True:
-            hero.rect.y = hero.rect.y - hero.speed
-            
-        elif hero.s == 1 or up == True:
-            hero.rect.y = hero.rect.y + hero.speed
+        question1 = transform.scale(image.load(text_question1),(200,250))
+        if it_update(player_hero,item1,question_start,None)==True:
+            quest_with_numbers('96',question1)
+            carpet_checker=True
+            a=False
+            question_start=False
+        if it_update(player_hero,item2,None,carpet_checker)== True and carpet_checker==True:            
+            if quest_with_yesno('Да','Нет',question1)== 'Да':
+                ok('Ты получил что-то наподобие ключика')    
+                gold_key=True
+                item2.rect.x+=1000
+            elif quest_with_yesno('Да','Нет',question1)== 'Да':
+                gold_key=False        
+            a=False
 
-        elif hero.s == 2 or left == True:
-            hero.rect.x = hero.rect.x + hero.speed
+    elif location == 'location-2':
+        window.blit(backgraund,(0, 0))
 
-        elif hero.s == 3 or right == True:
-            hero.rect.x = hero.rect.x - hero.speed
-    else:
-        collide = False
+        object_collide(list_wall_room2,decor_list2)
 
-    if speed_vis == True:
-        draw.rect(window, black, [25, win_y1, 252, 34])
-        draw.rect(window, white, [26, win_y1 + 1, 250, 32])
-        draw.rect(window, black, [30, win_y1 + 5, width, 24])
+        door1_room2.update()
+
         
+        object_draw(decor_list2)
+        object_draw(list_wall_room2)
+        player_hero.update()
+        player_hero.reset()
+
+        if sprite.collide_rect(door1_room2, player_hero):
+            door1_room2.teleportation()
+
+    elif location == 'location-3':
+        window.blit(backgraund,(0, 0))
+
+        object_collide(list_wall_room3,decor_list3)
+
+        door1_room3.update(), door2_room3.update()
+
         
+        object_draw(decor_list3)
+        object_draw(list_wall_room3)
+        player_hero.update()
+        player_hero.reset()
+
+        if sprite.collide_rect(door1_room3, player_hero):
+            door1_room3.teleportation()
+        elif sprite.collide_rect(door2_room3, player_hero):
+            door2_room3.teleportation()
+
+    elif location == 'location-4':
+        window.blit(backgraund,(0, 0))
+
+        object_collide(list_wall_room4,decor_list4)
+
+        door1_room4.update(), door2_room4.update()
+
+        
+        object_draw(decor_list4)
+        object_draw(list_wall_room4)
+        player_hero.update()
+        player_hero.reset()
+
+        if sprite.collide_rect(door1_room4, player_hero):
+            door1_room4.teleportation()
+        elif sprite.collide_rect(door2_room4, player_hero):
+            door2_room4.teleportation()
+
+    elif location == 'location-5':
+        window.blit(backgraund,(0, 0))
+
+        object_collide(list_wall_room5,decor_list5)
+
+        door1_room5.update()
+
+        object_draw(decor_list5)
+        object_draw(list_wall_room5)
+        player_hero.update()
+        player_hero.reset()
+
+        if sprite.collide_rect(door1_room5, player_hero):
+            door1_room5.teleportation()
+
+    elif location == 'location-6':
+        window.blit(backgraund,(0, 0))
+
+        object_collide(list_wall_room6,decor_list6)
+
+        door1_room6.update()
+        object_draw(decor_list6)
+        object_draw(list_wall_room6)
+        player_hero.update()
+        player_hero.reset()
+
+        if sprite.collide_rect(door1_room6, player_hero):
+            door1_room6.teleportation()
 
     display.update()
-    # цикл срабатывает каждую 0.06 секунд
-    clock.tick(60)
+    clock.tick(FPS)
